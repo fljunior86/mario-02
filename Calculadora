@@ -1,0 +1,128 @@
+# Create a ready-to-edit tobacco shop spreadsheet with example items and prices
+import pandas as pd
+from datetime import datetime
+from caas_jupyter_tools import display_dataframe_to_user
+
+agora = datetime.now().strftime("%Y-%m-%d %H:%M")
+
+dados = [
+    # CIGARROS
+    {"Categoria": "Cigarro", "Produto": "Marlboro Red (20)", "SKU": "CIG-MAR-RED-20",
+     "Preco_Custo": 14.00, "Preco_Venda": 18.00, "Margem_%": round((18.00-14.00)/18.00*100,2),
+     "Estoque": 40, "Codigo_Barras": "", "Fornecedor": "Distribuidora A", "Ultima_Atualizacao": agora},
+    {"Categoria": "Cigarro", "Produto": "Derby Azul (20)", "SKU": "CIG-DER-AZ-20",
+     "Preco_Custo": 9.50, "Preco_Venda": 12.00, "Margem_%": round((12.00-9.50)/12.00*100,2),
+     "Estoque": 60, "Codigo_Barras": "", "Fornecedor": "Distribuidora A", "Ultima_Atualizacao": agora},
+    {"Categoria": "Cigarro", "Produto": "Camel (20)", "SKU": "CIG-CAM-20",
+     "Preco_Custo": 12.50, "Preco_Venda": 16.00, "Margem_%": round((16.00-12.50)/16.00*100,2),
+     "Estoque": 35, "Codigo_Barras": "", "Fornecedor": "Distribuidora A", "Ultima_Atualizacao": agora},
+
+    # PODS DESCARTÁVEIS
+    {"Categoria": "Pod", "Produto": "Pod Descartável Elf Bar 5000 - Uva", "SKU": "POD-ELF-5000-UVA",
+     "Preco_Custo": 48.00, "Preco_Venda": 69.90, "Margem_%": round((69.90-48.00)/69.90*100,2),
+     "Estoque": 25, "Codigo_Barras": "", "Fornecedor": "VapesBR", "Ultima_Atualizacao": agora},
+    {"Categoria": "Pod", "Produto": "Pod Descartável Waka 6000 - Morango", "SKU": "POD-WAK-6000-MOR",
+     "Preco_Custo": 52.00, "Preco_Venda": 79.90, "Margem_%": round((79.90-52.00)/79.90*100,2),
+     "Estoque": 18, "Codigo_Barras": "", "Fornecedor": "VapesBR", "Ultima_Atualizacao": agora},
+    {"Categoria": "Pod", "Produto": "Pod Descartável Ignite 2500 - Mint", "SKU": "POD-IGN-2500-MIN",
+     "Preco_Custo": 38.00, "Preco_Venda": 59.90, "Margem_%": round((59.90-38.00)/59.90*100,2),
+     "Estoque": 20, "Codigo_Barras": "", "Fornecedor": "VapesBR", "Ultima_Atualizacao": agora},
+
+    # HALLS
+    {"Categoria": "Halls", "Produto": "Halls Extra Forte", "SKU": "HAL-EXF",
+     "Preco_Custo": 2.10, "Preco_Venda": 3.50, "Margem_%": round((3.50-2.10)/3.50*100,2),
+     "Estoque": 120, "Codigo_Barras": "", "Fornecedor": "Atacadista X", "Ultima_Atualizacao": agora},
+    {"Categoria": "Halls", "Produto": "Halls Morango", "SKU": "HAL-MOR",
+     "Preco_Custo": 2.00, "Preco_Venda": 3.50, "Margem_%": round((3.50-2.00)/3.50*100,2),
+     "Estoque": 95, "Codigo_Barras": "", "Fornecedor": "Atacadista X", "Ultima_Atualizacao": agora},
+
+    # TRIDENT
+    {"Categoria": "Trident", "Produto": "Trident Menta", "SKU": "TRI-MEN",
+     "Preco_Custo": 2.30, "Preco_Venda": 4.00, "Margem_%": round((4.00-2.30)/4.00*100,2),
+     "Estoque": 80, "Codigo_Barras": "", "Fornecedor": "Atacadista X", "Ultima_Atualizacao": agora},
+    {"Categoria": "Trident", "Produto": "Trident Morango", "SKU": "TRI-MOR",
+     "Preco_Custo": 2.30, "Preco_Venda": 4.00, "Margem_%": round((4.00-2.30)/4.00*100,2),
+     "Estoque": 70, "Codigo_Barras": "", "Fornecedor": "Atacadista X", "Ultima_Atualizacao": agora},
+]
+
+df = pd.DataFrame(dados)
+
+# Cálculos auxiliares (valores em estoque)
+df["Valor_Estoque_Custo"] = (df["Preco_Custo"] * df["Estoque"]).round(2)
+df["Valor_Estoque_Venda"] = (df["Preco_Venda"] * df["Estoque"]).round(2)
+
+# Resumos por categoria
+resumo_categoria = df.groupby("Categoria", as_index=False).agg(
+    Itens=("Produto", "count"),
+    Estoque_Total=("Estoque", "sum"),
+    Valor_Estoque_Custo=("Valor_Estoque_Custo", "sum"),
+    Valor_Estoque_Venda=("Valor_Estoque_Venda", "sum")
+)
+
+# Totais gerais
+totais = pd.DataFrame({
+    "Métrica": ["Itens", "Estoque_Total", "Valor_Estoque_Custo", "Valor_Estoque_Venda"],
+    "Total": [
+        len(df),
+        int(df["Estoque"].sum()),
+        float(df["Valor_Estoque_Custo"].sum()),
+        float(df["Valor_Estoque_Venda"].sum())
+    ]
+})
+
+# Salvar em Excel com múltiplas abas
+caminho_excel = "/mnt/data/planilha_tabacaria.xlsx"
+with pd.ExcelWriter(caminho_excel, engine="xlsxwriter") as writer:
+    df.to_excel(writer, index=False, sheet_name="Catalogo")
+    resumo_categoria.to_excel(writer, index=False, sheet_name="Resumo_por_Categoria")
+    totais.to_excel(writer, index=False, sheet_name="Totais_Gerais")
+    
+    # Melhorias de formatação básicas
+    workbook  = writer.book
+    fmt_moeda = workbook.add_format({"num_format": "R$ #,##0.00"})
+    fmt_int = workbook.add_format({"num_format": "0"})
+    # Formatar colunas na aba Catalogo
+    ws = writer.sheets["Catalogo"]
+    colunas_moeda = ["D","E","L","M"]  # Preco_Custo, Preco_Venda, Valor_Estoque_Custo, Valor_Estoque_Venda
+    for col in colunas_moeda:
+        ws.set_column(f"{col}:{col}", 16, fmt_moeda)
+    ws.set_column("F:F", 10, fmt_int)  # Estoque
+    ws.set_column("A:A", 14)
+    ws.set_column("B:B", 36)
+    ws.set_column("C:C", 18)
+    ws.set_column("G:I", 18)
+    ws.set_column("J:J", 20)
+    ws.set_column("K:K", 20)
+
+    # Resumo_por_Categoria formatação
+    ws2 = writer.sheets["Resumo_por_Categoria"]
+    ws2.set_column("A:A", 14)
+    ws2.set_column("B:B", 10, fmt_int)
+    ws2.set_column("C:C", 14, fmt_int)
+    ws2.set_column("D:E", 20, fmt_moeda)
+
+    # Totais_Gerais formatação
+    ws3 = writer.sheets["Totais_Gerais"]
+    ws3.set_column("A:A", 24)
+    ws3.set_column("B:B", 20)
+
+# Também salvar CSV (catálogo)
+caminho_csv = "/mnt/data/planilha_tabacaria_catalogo.csv"
+df.to_csv(caminho_csv, index=False, encoding="utf-8")
+
+# Mostrar a tabela principal para edição rápida no UI
+display_dataframe_to_user("Planilha de Tabacaria - Catálogo (editável)", df)
+
+caminho_excel, caminho_csv
+import time 
+import random
+import threading
+class Sensor:
+     def ___init___(self,nome)
+    self.nome = nome
+    self.valor = False
+
+def ler (self):
+    # Simula leitura aleatória de sensor
+    self.valor = random.choice 
+    
